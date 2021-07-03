@@ -144,6 +144,85 @@ def read_center_images_angles_corners(steering_image_log,
 
     return img_filenames, imgs, steerings, sequence_of_list_of_corners, raw_sequence_of_list_of_corners, raw_img_shape
 
+class SDC_Nvidia_data:
+    static_resize_shape = (128, 128)
+
+    @staticmethod
+    def static_resize_img_fn(img):
+        return st.resize(img, SDC_Nvidia_data.static_resize_shape)
+    @staticmethod
+    def static_resize_pixel_row_fn(pixel_row, img_height): 
+        return round(pixel_row / img_height * SDC_Nvidia_data.static_resize_shape[0])
+    @staticmethod
+    def static_resize_pixel_col_fn(pixel_col, img_width):
+        return round(pixel_col / img_width * SDC_Nvidia_data.static_resize_shape[1])
+    @staticmethod
+    def static_resize_pixel_fn(pixel, img_shape):
+        return [
+                SDC_Nvidia_data.static_resize_pixel_row_fn(pixel[0], img_shape[0]),
+                SDC_Nvidia_data.static_resize_pixel_col_fn(pixel[1], img_shape[1])]
+
+    @staticmethod
+    def static_crop_img_fn(img):
+        return img[100:,20:-20,:]
+    @staticmethod
+    def static_crop_pixel_row_fn(pixel_row, img_height):
+        return pixel_row - 100
+    @staticmethod
+    def static_crop_pixel_col_fn(pixel_col, img_width):
+        return pixel_col - 20
+    @staticmethod
+    def static_crop_pixel_fn(pixel, img_shape):
+        return [
+                SDC_Nvidia_data.static_crop_pixel_row_fn(pixel[0], img_shape[0]),
+                SDC_Nvidia_data.static_crop_pixel_col_fn(pixel[1], img_shape[1])]
+    @staticmethod
+    def static_crop_shape_fn(shape):
+        return [shape[0] - 100, shape[1] - 40]
+
+    def __init__(self,
+            image_file,
+            image_folder,
+            is_shuffle=False,
+            is_crop=True,
+            is_mask=True):
+
+        if is_crop:
+            crop_img_fn = self.static_crop_img_fn  
+            crop_pixel_fn = self.static_crop_pixel_fn
+        else:
+            crop_img_fn = IDENTITY_FN
+            crop_pixel_fn = IDENTITY_FN
+
+        self.transform_img_fn = lambda img: self.static_resize_img_fn(crop_img_fn(img))
+        self.transform_pixel_fn = lambda pixel, img_shape: self.static_resize_pixel_fn(crop_pixel_fn(pixel, img_shape), self.static_crop_shape_fn(img_shape))
+
+        if not is_mask:
+            filenames, data, labels = read_center_images_angles(
+                    image_file,
+                    image_folder,
+                    transform_img_fn = self.transform_img_fn,
+                    is_shuffle = is_shuffle)
+            self.input_data_filenames = np.asarray(filenames)
+            self.input_data = np.asarray(data)
+            self.output_data = np.asarray(labels)
+        else:
+            filenames, data, labels, sequence_of_list_of_corners, raw_sequence_of_list_of_corners, raw_data_shape = read_center_images_angles_corners(
+                    image_file,
+                    image_folder,
+                    transform_img_fn = self.transform_img_fn,
+                    transform_pixel_fn = self.transform_pixel_fn,
+                    is_shuffle = is_shuffle)
+            self.input_data_filenames = np.asarray(filenames)
+            self.input_data = np.asarray(data)
+            self.output_data = np.asarray(labels)
+            self.sequence_of_list_of_corners = np.asarray(sequence_of_list_of_corners)
+            self.raw_input_data_shape = raw_data_shape
+            self.raw_sequence_of_list_of_corners = np.asarray(raw_sequence_of_list_of_corners)
+
+    def __len__(self) :
+        return (np.ceil(len(self.input_data) / float(self.batch_size))).astype(np.int)
+
 class SDC_data:
     static_resize_shape = (128, 128)
 

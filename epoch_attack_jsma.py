@@ -6,7 +6,7 @@ from keras.models import load_model
 
 from attack_jsma import JSMARegressionAttack
 from pixelmap import AlgorithmEnum
-from utilities import SDC_data
+from utilities import SDC_data, SDC_Nvidia_data
 
 parser = argparse.ArgumentParser(description="Attacking a Udacity SDC Regression CNN Model")
 parser.add_argument('--modelsdir', type=str, help='directory to saved models', required=False)
@@ -15,6 +15,7 @@ parser.add_argument('--maxiters', type=int, help='maximum number of iterations o
 parser.add_argument('--attackdir', type=str, help='use this argument if the attack info and images are in the same folder; supercede attackinfo and attackimagedir', required=True)
 parser.add_argument('--resultsdir', type=str, help='name of the folder to save the results to', required=True)
 parser.add_argument('--pixelmap', type=str, help='perform pixel mapping on the masks to perturb mapped pixels in parallel, selects mapping algorithm to use')
+parser.add_argument('--nvidia', action='store_true', help='private dataset')
 
 parser.add_argument('--debug', action='store_true', help='print debug messages?')
 args = parser.parse_args()
@@ -59,6 +60,11 @@ if args.pixelmap:
         PIXELMAP_ALGO = AlgorithmEnum.HOMOGRAPHY
 else:
     PIXELMAP_ALGO = None
+
+if args.nvidia:
+    data = SDC_Nvidia_data(IMAGE_FILE, IMAGE_FOLDER)
+else:
+    data = SDC_data(IMAGE_FILE, IMAGE_FOLDER)
 
 data = SDC_data(IMAGE_FILE, IMAGE_FOLDER)
 model = load_model(MODEL_PATH)
