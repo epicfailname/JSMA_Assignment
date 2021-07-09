@@ -121,7 +121,7 @@ def read_center_images_angles_corners(steering_image_log,
     if is_shuffle:
         img_filenames, steerings, sequence_of_list_of_corners = shuffle(img_filenames, steerings, sequence_of_list_of_corners)
 
-    img = im.imread(os.path.join(image_folder, img_filenames[0]))
+    img = im.imread(img_filenames[0])
     raw_img_shape = img.shape
 
     # Read processed images into memory
